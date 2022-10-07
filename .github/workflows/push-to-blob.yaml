@@ -1,0 +1,36 @@
+name: Push to Azure Blob Storage
+
+# this workflow is heavily inspired by: https://github.com/bacongobbler/
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    env:
+      STORAGE_ACCOUNT_CONNECTION_STRING: ${{ secrets.STORAGE_ACCOUNT_CONNECTION_STRING }}
+      CONTAINER_NAME: $web
+      PATH_TO_SOURCE: ./public
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Purge
+        run: |
+          pip install azure-cli
+          az storage blob delete-batch \
+            --connection-string ${STORAGE_ACCOUNT_CONNECTION_STRING} \
+            --source ${CONTAINER_NAME}
+            --pattern *
+
+      - name: Deploy
+        run: |
+          pip install azure-cli
+          az storage blob upload-batch \
+            --connection-string ${STORAGE_ACCOUNT_CONNECTION_STRING} \
+            --container ${CONTAINER_NAME}
+            --source ${PATH_TO_SOURCE} \
